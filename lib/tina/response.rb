@@ -19,12 +19,13 @@ class Tina
       self.headers[Rack::CONTENT_TYPE]='text/html; charset=utf-8'
       self.write s
     end
+
     def erb(s, **locals)
       l=Tina.settings[:render][:layout]
       layout_f = File.read(l) if File.exist?(l)
       layout_f ||= '<%=yield%>'
-      s=render(layout_f, **locals) do
-          render(s, **locals).then{|s| 
+      s=_erb(layout_f, **locals) do
+          _erb(s, **locals).then{|s| 
             (locals.keys & [:md, :markdown]).any? ? K.new(s).to_html : s 
           }
       end

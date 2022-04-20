@@ -13,10 +13,10 @@ get '/' do |params|
 end
 
 get '/:any' do |any|
-    res.write any
+    res.write _erb( "{<%=any%>}", any:)
 end
 post '/:any' do |any|
-    res.write any.upcase
+    res._erb "POST {<%=any%>}", any:
 end
 
 not_found do

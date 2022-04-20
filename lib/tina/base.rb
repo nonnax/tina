@@ -12,18 +12,18 @@ class Tina
   end
   def default() 
     unless yield
-      status=res.status
-      handler[status.to_s].tap{ |h| h ? instance_eval(&h['404']) : res.write('Not Found') }
-      res.status=status # restore as res.write sets res.status==200
+      status=res.status.to_s
+      handler[status].tap{ |h| h ? instance_eval(&h[status]) : res.write('Not Found') }
+      res.status=404 # restore as res.write sets res.status==200
     end
   end
   def call(env)
     @req, @res, @env, md= Rack::Request.new(env), Tina::Response.new(nil, 404), env 
-    path, handle = handler.detect{|p, _| md=req.path_info.match( PATTERN[p] )}
+    path, body = handler.detect{|p, _| md=req.path_info.match( PATTERN[p] )}
     default do
       if path
         path, *slugs = Array(md&.captures)
-        instance_exec(*slugs, req.params, &handle[req.request_method])
+        instance_exec(*slugs, req.params, &body[req.request_method])
       end
     end
     res.finish
@@ -45,8 +45,13 @@ end
 module Kernel
   tina_handler = Hash.new { |h, k| h[k] = {} }
   define_method(:map) { tina_handler }
-  define_method(:not_found){|status=404,&block|  tina_handler[status.to_s]['404']=block }
+  define_method(:not_found){|status=404, &block| tina_handler[status.to_s]['404']=block }
   define_method(:get)    do |u, &block| tina_handler[u]['GET']=block  end
   define_method(:post)   do |u, &block| tina_handler[u]['POST']=block end
   define_method(:delete) do |u, &block| tina_handler[u]['DELETE']=block end
+  def _erb(s, **locals)
+    new_b=binding.dup
+    new_b.instance_eval{ locals.each{|k, v|local_variable_set(k, v)}}
+    ERB.new(s).result(new_b)
+  end
 end
