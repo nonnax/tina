@@ -10,14 +10,18 @@ class Tina
       super
     end
     def json(j)
-      self.status=200
-      self.headers[Rack::CONTENT_TYPE]='application/json'
-      self.write j
+      instance_eval do
+        status=200
+        headers[Rack::CONTENT_TYPE]='application/json'
+        write j
+      end
     end
     def html(s)
-      self.status=200
-      self.headers[Rack::CONTENT_TYPE]='text/html; charset=utf-8'
-      self.write s
+      instance_eval do
+        status=200
+        headers[Rack::CONTENT_TYPE]='text/html; charset=utf-8'
+        write s
+      end
     end
 
     def erb(s, **locals)

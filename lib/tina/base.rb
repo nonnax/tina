@@ -13,7 +13,7 @@ class Tina
   def default() 
     unless yield
       status=res.status.to_s
-      handler[status].tap{ |h| h ? instance_eval(&h[status]) : res.write('Not Found') }
+      handler[status].tap{ |h| h ? instance_eval(&h['DEFAULT']) : res.write('Not Found') }
       res.status=404 # restore as res.write sets res.status==200
     end
   end
@@ -34,24 +34,27 @@ class Tina
   @settings=Hash.new{|h, k| h[k]={}}
   @settings[:render][:layout]='views/layout.erb'
   def self.settings; @settings end
-
+  
   PATTERN=Hash.new{|h, path| 
-    h[path]=
-    path.gsub(/:\w+/){ |match| '([^/?#]+)' }.then{|p| /^(#{p})\/?$/ } 
+    h[path]=path
+    .gsub(/:\w+/){ |match| '([^/?#]+)' }
+    .then{|p| /^(#{p})\/?$/ } 
   }
   
 end
 
-module Kernel
+module TinaHandler
   tina_handler = Hash.new { |h, k| h[k] = {} }
   define_method(:map) { tina_handler }
-  define_method(:not_found){|status=404, &block| tina_handler[status.to_s]['404']=block }
+  define_method(:handle){|status=404, &block| tina_handler[status.to_s]['DEFAULT']=block }
   define_method(:get)    do |u, &block| tina_handler[u]['GET']=block  end
   define_method(:post)   do |u, &block| tina_handler[u]['POST']=block end
   define_method(:delete) do |u, &block| tina_handler[u]['DELETE']=block end
   def _erb(s, **locals)
-    new_b=binding.dup
-    new_b.instance_eval{ locals.each{|k, v|local_variable_set(k, v)}}
-    ERB.new(s).result(new_b)
+    binding.dup
+    .tap{ |b| b.instance_eval{ locals.each{|k, v|local_variable_set(k, v)}}}
+    .then{|b| ERB.new(s).result(b)}
   end
 end
+
+Kernel.include TinaHandler

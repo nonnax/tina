@@ -15,12 +15,14 @@ end
 get '/:any' do |any|
     res.write _erb( "{<%=any%>}", any:)
 end
+
 post '/:any' do |any|
-    res._erb "POST {<%=any%>}", any:
+    partial=_erb( "POST {<%=any%>}", any:)
+    res.write partial
 end
 
-not_found do
-  res.erb '#Wala dito', md:true
+handle 404 do
+  res.erb %{#Not here}, md:true
 end
 # pp Kernel.map['GET'].map{|e| e.first}
 pp Kernel.map
