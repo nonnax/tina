@@ -12,10 +12,11 @@ class Tina
   end
   def default() 
     unless yield
-      status=res.status
+      status=res.status.to_s
       handler[status].tap{ |h| h ? instance_eval(&h['DEFAULT']) : res.write('Not Found') }
       res.status=404 # restore as res.write sets res.status==200
     end
+    res.finish
   end
   def call(env)
     @req, @res, @env, md= Rack::Request.new(env), Tina::Response.new(nil, 404), env 
@@ -26,9 +27,9 @@ class Tina
         instance_exec(*slugs, req.params, &body[req.request_method])
       end
     end
-    res.finish
   rescue Exception => e
-    [500, {}, [e.message].flatten]
+    pp [e.message, e.backtrace]
+    [500, {}, [e.message, e.backtrace].flatten]
   end
 
   @settings=Hash.new{|h, k| h[k]={}}
@@ -51,7 +52,7 @@ class Tina
   module Handler
     tina_handler = Hash.new { |h, k| h[k.to_s] = {} }
     define_method(:map) { tina_handler }
-    define_method(:handle){|status=404, &block| tina_handler[status]['DEFAULT']=block }
+    define_method(:handle){|status=404, &block| tina_handler[status.to_s]['DEFAULT']=block }
     define_method(:get)    do |u, &block| tina_handler[u]['GET']=block  end
     define_method(:post)   do |u, &block| tina_handler[u]['POST']=block end
     define_method(:delete) do |u, &block| tina_handler[u]['DELETE']=block end
