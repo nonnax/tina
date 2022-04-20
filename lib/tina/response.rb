@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Id$ nonnax 2022-04-15 17:26:56 +0800
-require_relative 'utils'
+# require_relative 'utils'
 require 'kramdown'
 K=Kramdown::Document
 class Tina
