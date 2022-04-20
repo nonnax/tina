@@ -8,7 +8,7 @@ class Tina
   attr :env, :req, :res, :handler 
   
   def initialize() 
-    @handler = TinaHandler.map 
+    @handler = Handler.map 
   end
   def default() 
     unless yield
@@ -41,27 +41,26 @@ class Tina
     .then{|p| /^(#{p})\/?$/ } 
   }
   
-end
-
-class Tina
   def session
     env["rack.session"] || raise(RuntimeError,
       "You're missing a session handler. use Rack::Session::Cookie")
   end
 end
 
-module TinaHandler
-  tina_handler = Hash.new { |h, k| h[k.to_s] = {} }
-  define_method(:map) { tina_handler }
-  define_method(:handle){|status=404, &block| tina_handler[status]['DEFAULT']=block }
-  define_method(:get)    do |u, &block| tina_handler[u]['GET']=block  end
-  define_method(:post)   do |u, &block| tina_handler[u]['POST']=block end
-  define_method(:delete) do |u, &block| tina_handler[u]['DELETE']=block end
-  def _erb(s, **locals)
-    binding.dup
-    .tap{ |b| b.instance_eval{ locals.each{|k, v|local_variable_set(k, v)}}}
-    .then{|b| ERB.new(s).result(b)}
+class Tina
+  module Handler
+    tina_handler = Hash.new { |h, k| h[k.to_s] = {} }
+    define_method(:map) { tina_handler }
+    define_method(:handle){|status=404, &block| tina_handler[status]['DEFAULT']=block }
+    define_method(:get)    do |u, &block| tina_handler[u]['GET']=block  end
+    define_method(:post)   do |u, &block| tina_handler[u]['POST']=block end
+    define_method(:delete) do |u, &block| tina_handler[u]['DELETE']=block end
+    def _erb(s, **locals)
+      binding.dup
+      .tap{ |b| b.instance_eval{ locals.each{|k, v|local_variable_set(k, v)}}}
+      .then{|b| ERB.new(s).result(b)}
+    end
   end
 end
 
-Kernel.include TinaHandler
+Kernel.include Tina::Handler
