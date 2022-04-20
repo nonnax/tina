@@ -12,7 +12,7 @@ class Tina
   end
   def default() 
     unless yield
-      status=res.status.to_s
+      status=res.status
       handler[status].tap{ |h| h ? instance_eval(&h['DEFAULT']) : res.write('Not Found') }
       res.status=404 # restore as res.write sets res.status==200
     end
@@ -28,7 +28,7 @@ class Tina
     end
     res.finish
   rescue Exception => e
-    [500, {}, [e.message, e.backtrace].flatten]
+    [500, {}, [e.message].flatten]
   end
 
   @settings=Hash.new{|h, k| h[k]={}}
@@ -43,10 +43,17 @@ class Tina
   
 end
 
+class Tina
+  def session
+    env["rack.session"] || raise(RuntimeError,
+      "You're missing a session handler. use Rack::Session::Cookie")
+  end
+end
+
 module TinaHandler
-  tina_handler = Hash.new { |h, k| h[k] = {} }
+  tina_handler = Hash.new { |h, k| h[k.to_s] = {} }
   define_method(:map) { tina_handler }
-  define_method(:handle){|status=404, &block| tina_handler[status.to_s]['DEFAULT']=block }
+  define_method(:handle){|status=404, &block| tina_handler[status]['DEFAULT']=block }
   define_method(:get)    do |u, &block| tina_handler[u]['GET']=block  end
   define_method(:post)   do |u, &block| tina_handler[u]['POST']=block end
   define_method(:delete) do |u, &block| tina_handler[u]['DELETE']=block end
