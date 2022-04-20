@@ -8,7 +8,7 @@ class Tina
   attr :env, :req, :res, :handler 
   
   def initialize() 
-    @handler = Kernel.map 
+    @handler = TinaHandler.map 
   end
   def default() 
     unless yield

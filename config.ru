@@ -3,6 +3,7 @@
 require_relative 'lib/tina'
 require 'json'
 
+pretty=JSON.method(:pretty_generate)
 # use Rack::CommonLogger
 # use Rack::ShowExceptions
 # use Rack::Lint
@@ -25,6 +26,6 @@ handle 404 do
   res.erb %{#Not here}, md:true
 end
 # pp Kernel.map['GET'].map{|e| e.first}
-pp Kernel.map
+puts pretty[Kernel.map]
 
 run Tina.new
